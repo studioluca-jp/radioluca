@@ -539,6 +539,9 @@
   .stamp{ text-align:center; line-height:1.7; border-radius:18px; }
   .hub-title{ white-space:nowrap; font-size:clamp(18px,5.6vw,30px); }
   .hub-sub{ white-space:nowrap; font-size:clamp(9.5px,2.7vw,13px); }
+  .reveal:not(.locked){ display:none !important; }
+  .reveal.locked{ animation:revealIn .7s ease both; }
+  @keyframes revealIn{ from{ opacity:0; transform:translateY(12px); } to{ opacity:1; transform:none; } }
 </style>
 </head>
 <body>
@@ -2353,6 +2356,18 @@ function ensureBottleAmbient(){
 (function(){ // the ship sails off when the signal is lost
   const blip=document.getElementById('blip'), ship=document.getElementById('opShip');
   if(blip&&ship) new MutationObserver(()=>{ if(blip.classList.contains('gone')) ship.classList.add('gone'); }).observe(blip,{attributes:true,attributeFilter:['class']});
+})();
+</script>
+<script>
+(function(){ // クリア演出の表示エリアへ自動スクロール
+  function go(el){ try{ el.scrollIntoView({behavior:'smooth', block:'end'}); }catch(e){} }
+  document.querySelectorAll('.reveal').forEach(rv=>{
+    new MutationObserver(()=>{ if(rv.classList.contains('locked')) setTimeout(()=>go(rv),180); })
+      .observe(rv,{attributes:true,attributeFilter:['class']});
+    const st=rv.querySelector('.stamp');
+    if(st) new MutationObserver(()=>{ if(st.classList.contains('show')) setTimeout(()=>go(st),150); })
+      .observe(st,{attributes:true,attributeFilter:['class']});
+  });
 })();
 </script>
 </body>
