@@ -3,7 +3,13 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<title>RadioLuca号 捜索 — 航海図</title>
+<title>RadioLuca号、寄港。 — RadioLuca号を探しにいこう</title>
+<meta name="description" content="RadioLuca号が、また遊びに行ってしまったみたい。みんなで手がかりを集めて、行方を探そう。">
+<meta name="theme-color" content="#050c1c">
+<meta property="og:type" content="website">
+<meta property="og:title" content="RadioLuca号、寄港。">
+<meta property="og:description" content="RadioLuca号が、また遊びに行ってしまったみたい。みんなで手がかりを集めて、行方を探そう。">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%23081a3a'/%3E%3Ccircle cx='16' cy='16' r='4' fill='%236fd7ff'/%3E%3Ccircle cx='16' cy='16' r='10' fill='none' stroke='%23f7e4b0' stroke-width='1.6'/%3E%3C/svg%3E">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Shippori+Mincho:wght@500;700&family=Zen+Kaku+Gothic+New:wght@400;500;700&family=Space+Mono:wght@400;700&family=Klee+One:wght@400;600&family=Zen+Kurenaido&display=swap" rel="stylesheet">
 <style>
@@ -542,6 +548,8 @@
   .reveal:not(.locked){ display:none !important; }
   .reveal.locked{ animation:revealIn .7s ease both; }
   @keyframes revealIn{ from{ opacity:0; transform:translateY(12px); } to{ opacity:1; transform:none; } }
+  .ei-kv:not(.has-img){ display:none; }
+  @media (min-width:600px){ .modal-sheet{ max-width:520px; margin:0 auto; } }
 </style>
 </head>
 <body>
@@ -688,7 +696,6 @@
     <button class="complete-btn" id="completeBtn">開催情報を見る →</button>
   </div>
 
-  <div class="note">※港1〜5、すべてマップの上でそのまま遊べます(ページ遷移なし)。<br><button id="previewEiBtn" style="margin-top:8px; background:none; border:1px solid var(--panel-edge); color:var(--ink-dim); font-family:'Space Mono',monospace; font-size:10px; padding:5px 10px; border-radius:14px; cursor:pointer;">確認用:開催情報ページを直接見る</button></div>
 </section>
 
 <!-- ================= EVENT INFO (final reveal) ================= -->
@@ -727,7 +734,6 @@
   </div>
 
   <button class="ei-ticket-btn" id="eiTicketBtn">チケットを予約する →</button>
-  <div class="ei-note">※プロトタイプにつき実際の予約リンクには接続されていません。実装版ではLivePocketの該当ページへ遷移します。</div>
 </section>
 
 <!-- ================= MODAL 1: 周波数ダイヤル ================= -->
@@ -807,7 +813,6 @@
     <div class="stamp" id="stamp1"><span class="lamp"></span>港1・出航の合図 解禁<br>捜索チャートに戻る</div>
   </div>
 
-  <div class="g1-note">※プロトタイプにつき目標周波数は固定(83.00MHz)です。実装版ではグッズに隠された計測器の針が示す値がヒントになります。信号の"音"の正体は、サイト上では明かしません。</div>
 </div>
 
 <!-- ================= MODAL 2: 曇った窓ガラス ================= -->
@@ -947,7 +952,6 @@
     <div class="stamp" id="stamp4"><span class="lamp"></span>港4・信号の解読 解禁<br>捜索チャートに戻る</div>
   </div>
 
-  <div class="g1-note">※デモ用の正解コードは「RADIO」です。実装版ではグッズラインナップ画像から読み取れる符号に差し替えます。</div>
 </div>
 
 <!-- ================= MODAL 5: 漂うボトルをつかまえて ================= -->
@@ -1054,6 +1058,7 @@ async function runOpening(){
 }
 runOpening();
 function goToHub(){
+  document.getElementById('skipBtn').style.display='none';
   document.getElementById('opening').style.display='none';
   const hub = document.getElementById('hub');
   hub.style.display='flex';
@@ -1124,6 +1129,8 @@ function markPropCleared(id){
 /* ================= EVENT INFO page ================= */
 // キービジュアル画像のパスをここに入れると、枠の中に表示されます(空欄ならプレースホルダー)
 const KV_SRC = '';
+// チケット予約ページのURLをここに入れると、ボタンが有効になります(空欄なら「近日公開」表示)
+const TICKET_URL = '';
 (function applyKv(){
   if(!KV_SRC) return;
   const img = document.getElementById('eiKvImg');
@@ -1135,8 +1142,9 @@ function initEventInfoNav(){
   if(eiInited) return;
   eiInited = true;
   document.getElementById('completeBtn').addEventListener('click', goToEventInfo);
-  const previewBtn = document.getElementById('previewEiBtn');
-  if(previewBtn) previewBtn.addEventListener('click', goToEventInfo);
+  const tb = document.getElementById('eiTicketBtn');
+  if(TICKET_URL){ tb.addEventListener('click', ()=> window.open(TICKET_URL,'_blank','noopener')); }
+  else { tb.textContent = 'チケット情報は、近日公開'; tb.disabled = true; tb.style.opacity = '.6'; tb.style.cursor = 'default'; }
   document.getElementById('eiBack').addEventListener('click', ()=>{
     document.getElementById('eventInfo').classList.remove('show');
     document.getElementById('eventInfo').style.display = 'none';
