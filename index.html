@@ -1760,7 +1760,7 @@ function resetGame3(){
 document.getElementById('stamp3') && document.getElementById('stamp3').addEventListener('click', ()=>{ markPropCleared('3'); closeModal('3'); });
 
 /* ================= GAME 4: receive the ship's signal — enter the code ================= */
-const DEMO_CODE = 'RADIO'; // placeholder; production build reads this from the goods lineup artwork
+const DEMO_CODE = 'TOKYO'; // 港1の雑音に混ざるモールスから推理して入力する答え
 let g4Inited = false, locked4 = false;
 let codeCells, codeFeedback, submitCodeBtn, resetBtn4, revealEl4, fogEl4, revealMsgEl4, stampEl4, revealArt4;
 let noiseCanvasCtx, noiseRAF;
