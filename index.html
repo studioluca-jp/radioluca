@@ -549,6 +549,7 @@
   .reveal.locked{ animation:revealIn .7s ease both; }
   @keyframes revealIn{ from{ opacity:0; transform:translateY(12px); } to{ opacity:1; transform:none; } }
   .ei-kv:not(.has-img){ display:none; }
+  .ei-kv.has-img{ aspect-ratio:3/4; max-width:300px; }
   @media (min-width:600px){ .modal-sheet{ max-width:520px; margin:0 auto; } }
 </style>
 </head>
@@ -1128,7 +1129,7 @@ function markPropCleared(id){
 
 /* ================= EVENT INFO page ================= */
 // キービジュアル画像のパスをここに入れると、枠の中に表示されます(空欄ならプレースホルダー)
-const KV_SRC = '';
+const KV_SRC = 'kv.jpg'; // 仮のキービジュアル
 // チケット予約ページのURLをここに入れると、ボタンが有効になります(空欄なら「近日公開」表示)
 const TICKET_URL = '';
 (function applyKv(){
