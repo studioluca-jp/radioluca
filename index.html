@@ -555,7 +555,10 @@
   html,body{ background:#04091a !important; }
   /* 閉じているシートは完全に隠す(下端に頭が見えないように) */
   .modal-sheet:not(.show){ visibility:hidden; box-shadow:none !important; transition:transform .42s cubic-bezier(.22,.9,.3,1), visibility 0s linear .42s; }
+  .modal-sheet:not(.show){ transform:translateY(120%); }
   .modal-sheet.show{ visibility:visible; }
+  /* iOSのバー出入りでも下端に何も見えないように、ページ自体はスクロールさせない */
+  html,body{ overscroll-behavior-y:none; }
   .modal-sheet{ max-height:92vh; max-height:92dvh; }
 </style>
 </head>
