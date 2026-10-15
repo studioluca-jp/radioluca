@@ -160,8 +160,8 @@
   .fine-tune{ margin-top:14px; padding-top:12px; border-top:1px dashed var(--panel-edge); display:flex; flex-direction:column; align-items:center; gap:8px; opacity:0; max-height:0; overflow:hidden; transition:opacity 0.4s ease; }
   .fine-tune.active{ opacity:1; max-height:200px; }
   .fine-tune-label{ font-family:'Space Mono',monospace; font-size:10px; letter-spacing:0.1em; color:var(--lantern); }
-  .fine-tune-row{ display:flex; gap:6px; flex-wrap:wrap; justify-content:center; }
-  .fine-btn{ font-family:'Space Mono',monospace; font-size:11px; color:var(--ink); background:#1a2d40; border:1px solid var(--panel-edge); border-radius:8px; padding:7px 9px; cursor:pointer; min-width:40px; }
+  .fine-tune-row{ display:flex; gap:4px; flex-wrap:nowrap; justify-content:center; }
+  .fine-btn{ font-family:'Space Mono',monospace; font-size:11px; color:var(--ink); background:#1a2d40; border:1px solid var(--panel-edge); border-radius:8px; padding:10px 0; cursor:pointer; min-width:0; flex:1 1 0; font-size:10.5px; white-space:nowrap; }
   .fine-btn:hover{ border-color:var(--brass); color:var(--moon); }
   .fine-btn:active{ transform:scale(0.94); }
 
@@ -232,6 +232,8 @@
     pointer-events:none; opacity:0; transition:opacity 0.15s ease;
   }
   .hold-ring svg{ width:100%; height:100%; }
+  .hold-ring.release{ transition:opacity .35s ease; }
+  .hold-ring.release .hold-ring-fg{ transition:stroke-dashoffset .85s ease-out; }
   .hold-ring-bg{ fill:none; stroke:rgba(245,227,179,0.18); stroke-width:3; }
   .hold-ring-fg{ fill:none; stroke:var(--glow); stroke-width:3; stroke-linecap:round; filter:drop-shadow(0 0 4px rgba(111,215,255,0.8)); }
 
@@ -870,7 +872,7 @@
   <div class="g1-head">
     <div class="g1-eyebrow">港3 — 星の航路</div>
     <div class="g1-title">星を、正しい順になぞって。</div>
-    <div class="g1-sub">星のかたちを、思い出そう。</div>
+    <div class="g1-sub">正しい順番に結ぼう。</div>
   </div>
 
   <div class="star-panel">
@@ -925,7 +927,7 @@
   <div class="g1-head">
     <div class="g1-eyebrow">港4 — 船からの信号</div>
     <div class="g1-title">信号を、受け取って。</div>
-    <div class="g1-sub">途切れた信号を、読み解こう。</div>
+    <div class="g1-sub">かすかな信号を、読み解こう。</div>
   </div>
 
   <div class="signal-screen" id="signalScreen">
@@ -1059,7 +1061,7 @@ function typeInto(el, text, speed=70){
 async function runOpening(){
   await wait(900); opEyebrow.classList.add('show'); await wait(1400);
   staticFlash.classList.add('on'); blip.classList.add('gone'); await wait(600);
-  await typeInto(opTitle, '信号、途絶。', 90); await wait(300);
+  await typeInto(opTitle, '信号が途絶えた。', 90); await wait(300);
   await typeInto(opSub, 'RadioLuca号が、消えた。\nまたどこかへ遊びに行ってしまったのかもしれない。', 35); await wait(400);
   opCta.classList.add('show');
 }
@@ -1364,7 +1366,7 @@ function scheduleMorseLoop(letterIndex){
   let t = actx.currentTime + 0.05;
   const gainTarget = currentSignalGain();
   [...code].forEach(sym=>{
-    const dur = (sym === '-' ? UNIT*3 : UNIT) / 1000;
+    const dur = (sym === '-' ? UNIT*4.2 : UNIT) / 1000;
     toneGain.gain.setValueAtTime(0, t);
     if(gainTarget > 0.001){
       toneGain.gain.linearRampToValueAtTime(gainTarget, t+0.012);
@@ -1374,7 +1376,7 @@ function scheduleMorseLoop(letterIndex){
     t += dur + UNIT/1000;
   });
   const isLastLetter = li === WORD.length - 1;
-  t += (isLastLetter ? UNIT*7 : UNIT*2) / 1000;
+  t += (isLastLetter ? UNIT*16 : UNIT*9) / 1000;
   const waitMs = Math.max(30, (t - actx.currentTime) * 1000);
   setTimeout(()=> scheduleMorseLoop(letterIndex+1), waitMs);
 }
@@ -1410,19 +1412,31 @@ function resetGame1(){
   setAngle(-135);
 }
 
+/* 静かな夜の海: ゆっくりうねる、低くやわらかい波の音(ザーッというホワイトノイズは使わない) */
+function makeWaveBed(level){
+  const sr = actx.sampleRate, len = 6*sr;
+  const buf = actx.createBuffer(1, len, sr), d = buf.getChannelData(0);
+  let b = 0, peak = 0;
+  for(let i=0;i<len;i++){ b = (b + 0.02*(Math.random()*2-1))/1.02; d[i] = b; if(Math.abs(b)>peak) peak = Math.abs(b); }
+  for(let i=0;i<len;i++) d[i] /= peak;
+  const src = actx.createBufferSource(); src.buffer = buf; src.loop = true;
+  const lp = actx.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = 420; lp.Q.value = 0.4;
+  const swell = actx.createGain(); swell.gain.value = 0.5;
+  [[0.11,0.34],[0.29,0.14]].forEach(([hz,depth])=>{   // 大きなうねり + ちゃぷちゃぷの小さな揺れ
+    const o = actx.createOscillator(); o.type = 'sine'; o.frequency.value = hz;
+    const g = actx.createGain(); g.gain.value = depth; o.connect(g).connect(swell.gain); o.start();
+  });
+  const out = actx.createGain(); out.gain.value = level;
+  src.connect(lp).connect(swell).connect(out).connect(masterGain); src.start();
+  return out;
+}
 /* audio (shared engine, also used by game 2's rain) */
 let actx, noiseSrc, noiseGain, toneOsc, toneGain, masterGain;
 function ensureAudio(){
   if(actx) return;
   actx = new (window.AudioContext || window.webkitAudioContext)();
   masterGain = actx.createGain(); masterGain.gain.value = 1; masterGain.connect(actx.destination);
-  const bufferSize = 2*actx.sampleRate;
-  const buffer = actx.createBuffer(1, bufferSize, actx.sampleRate);
-  const data = buffer.getChannelData(0);
-  for(let i=0;i<bufferSize;i++) data[i] = Math.random()*2-1;
-  noiseSrc = actx.createBufferSource(); noiseSrc.buffer = buffer; noiseSrc.loop = true;
-  noiseGain = actx.createGain(); noiseGain.gain.value = 0.14;
-  noiseSrc.connect(noiseGain).connect(masterGain); noiseSrc.start();
+  noiseGain = makeWaveBed(0.34);
   toneOsc = actx.createOscillator(); toneOsc.type='sine'; toneOsc.frequency.value=660;
   toneGain = actx.createGain(); toneGain.gain.value = 0;
   toneOsc.connect(toneGain).connect(masterGain); toneOsc.start();
@@ -1431,7 +1445,7 @@ function ensureAudio(){
 function updateAudio(proximity){
   if(!actx) return;
   const now = actx.currentTime;
-  noiseGain.gain.linearRampToValueAtTime(0.14*(1-proximity)+0.01, now+0.05);
+  noiseGain.gain.linearRampToValueAtTime(0.34*(1-0.5*proximity), now+0.12);
 }
 
 /* ================= GAME 2: foggy window — find the lighthouse ================= */
@@ -1487,7 +1501,7 @@ function initGame2(){
     ensureAudio(); ensureAmbient();
     const on = soundBtn2.classList.toggle('active');
     soundBtn2.textContent = on ? '♪ 波音を鳴らす' : '♪ ミュート中';
-    if(rainGain) rainGain.gain.linearRampToValueAtTime(on?0.045:0, actx.currentTime+0.15);
+    if(rainGain) rainGain.gain.linearRampToValueAtTime(on?0.3:0, actx.currentTime+0.15);
   });
   resetBtn2.addEventListener('click', ()=> resetGame2());
   stampEl2.addEventListener('click', ()=>{ markPropCleared('2'); closeModal('2'); });
@@ -1635,18 +1649,7 @@ function resetGame2(){
 function ensureAmbient(){
   if(!actx || rainStarted) return;
   rainStarted = true;
-  const bufferSize = 2*actx.sampleRate;
-  const buffer = actx.createBuffer(1, bufferSize, actx.sampleRate);
-  const data = buffer.getChannelData(0);
-  let b0=0,b1=0,b2=0;
-  for(let i=0;i<bufferSize;i++){
-    const white = Math.random()*2-1;
-    b0 = 0.99*b0 + white*0.03; b1 = 0.98*b1 + white*0.05; b2 = 0.95*b2 + white*0.08;
-    data[i] = (b0+b1+b2) * 0.5;
-  }
-  rainSrc = actx.createBufferSource(); rainSrc.buffer = buffer; rainSrc.loop = true;
-  rainGain = actx.createGain(); rainGain.gain.value = 0.045;
-  rainSrc.connect(rainGain).connect(masterGain); rainSrc.start();
+  rainGain = makeWaveBed(0.3);
 }
 
 /* ================= GAME 3: trace the stars in the correct order ================= */
@@ -1928,7 +1931,7 @@ function initGame5(){
     ensureAudio(); ensureBottleAmbient();
     const on = soundBtn5.classList.toggle('active');
     soundBtn5.textContent = on ? '♪ 波音を鳴らす' : '♪ ミュート中';
-    if(bottleGain) bottleGain.gain.linearRampToValueAtTime(on?0.04:0, actx.currentTime+0.15);
+    if(bottleGain) bottleGain.gain.linearRampToValueAtTime(on?0.3:0, actx.currentTime+0.15);
   });
   resetBtn5.addEventListener('click', ()=> resetGame5());
   stampEl5.addEventListener('click', ()=>{ markPropCleared('5'); closeModal('5'); });
@@ -1940,11 +1943,33 @@ function measure5(){ W5 = panelEl5.clientWidth || 280; H5 = panelEl5.clientHeigh
 function zoneXY5(idx){ return { x: ZONE_FR[idx].x * W5, y: ZONE_FR[idx].y * H5 }; }
 function shuffle5(a){ const r=a.slice(); for(let i=r.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [r[i],r[j]]=[r[j],r[i]]; } return r; }
 
+let ringTimer5;
+function releaseRing5(x, y, p){   // ちょっとタップしただけでも、長押しメーターを見せる
+  holdRingEl.style.left = x + 'px'; holdRingEl.style.top = y + 'px';
+  holdRingEl.classList.add('release');
+  holdRingEl.style.opacity = 1;
+  holdRingFg.style.strokeDashoffset = HOLD_RING_CIRC * (1 - p);
+  void holdRingEl.getBoundingClientRect();
+  requestAnimationFrame(()=>{ holdRingFg.style.strokeDashoffset = HOLD_RING_CIRC; });
+  clearTimeout(ringTimer5);
+  ringTimer5 = setTimeout(()=>{ holdRingEl.style.opacity = 0; holdRingEl.classList.remove('release'); }, 950);
+}
 function endPointer5(){
+  const pos = pointerPos5;
+  let ghost = null;
+  if(pointerDown5 && pos && !locked5){
+    let best = GRAB_RADIUS;
+    bottles5.forEach(b=>{
+      const d = Math.hypot(b.pos.x-pos.x, b.pos.y-pos.y);
+      if(d < best && !(b.correct && !isInZone5(b))){ best = d; ghost = b; }
+    });
+  }
+  const p = Math.max(0.18, Math.min(0.95, holdTime5/HOLD_REQUIRED));
   pointerDown5 = false;
   pointerPos5 = null;
   chaseHandEl.style.opacity = 0;
   clearHold5();
+  if(ghost) releaseRing5(ghost.pos.x, ghost.pos.y, p);
 }
 function clearHold5(){
   holdTime5 = 0;
@@ -2201,18 +2226,7 @@ function resetGame5(){
 function ensureBottleAmbient(){
   if(!actx || bottleActive5) return;
   bottleActive5 = true;
-  const bufferSize = 2*actx.sampleRate;
-  const buffer = actx.createBuffer(1, bufferSize, actx.sampleRate);
-  const data = buffer.getChannelData(0);
-  let b0=0,b1=0,b2=0;
-  for(let i=0;i<bufferSize;i++){
-    const white = Math.random()*2-1;
-    b0 = 0.99*b0 + white*0.03; b1 = 0.98*b1 + white*0.05; b2 = 0.95*b2 + white*0.08;
-    data[i] = (b0+b1+b2) * 0.5;
-  }
-  const src = actx.createBufferSource(); src.buffer = buffer; src.loop = true;
-  bottleGain = actx.createGain(); bottleGain.gain.value = 0.04;
-  src.connect(bottleGain).connect(masterGain); src.start();
+  bottleGain = makeWaveBed(0.3);
 }
 </script>
 <script>
