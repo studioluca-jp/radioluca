@@ -1436,7 +1436,14 @@ function ensureAudio(){
   if(actx) return;
   actx = new (window.AudioContext || window.webkitAudioContext)();
   masterGain = actx.createGain(); masterGain.gain.value = 1; masterGain.connect(actx.destination);
-  noiseGain = makeWaveBed(0.34);
+  // 港1だけは、モールスが聞こえすぎないよう、元のザーッという雑音に戻す
+  const bufferSize = 2*actx.sampleRate;
+  const buffer = actx.createBuffer(1, bufferSize, actx.sampleRate);
+  const data = buffer.getChannelData(0);
+  for(let i=0;i<bufferSize;i++) data[i] = Math.random()*2-1;
+  noiseSrc = actx.createBufferSource(); noiseSrc.buffer = buffer; noiseSrc.loop = true;
+  noiseGain = actx.createGain(); noiseGain.gain.value = 0.14;
+  noiseSrc.connect(noiseGain).connect(masterGain); noiseSrc.start();
   toneOsc = actx.createOscillator(); toneOsc.type='sine'; toneOsc.frequency.value=660;
   toneGain = actx.createGain(); toneGain.gain.value = 0;
   toneOsc.connect(toneGain).connect(masterGain); toneOsc.start();
@@ -1445,7 +1452,7 @@ function ensureAudio(){
 function updateAudio(proximity){
   if(!actx) return;
   const now = actx.currentTime;
-  noiseGain.gain.linearRampToValueAtTime(0.34*(1-0.5*proximity), now+0.12);
+  noiseGain.gain.linearRampToValueAtTime(0.14*(1-proximity)+0.01, now+0.05);
 }
 
 /* ================= GAME 2: foggy window — find the lighthouse ================= */
